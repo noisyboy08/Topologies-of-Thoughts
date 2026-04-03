@@ -1,0 +1,11 @@
+{
+  "name": "topologies-of-thoughts",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "backend": "uvicorn backend.app.main:app --reload --port 8000"
+  }
+}
+
