@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/hands": "^0.4.1675469240",
     "@react-three/drei": "^9.105.0",
     "@react-three/fiber": "^8.16.0",
     "@supabase/supabase-js": "^2.43.4",

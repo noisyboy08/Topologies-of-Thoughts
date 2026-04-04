@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Hands } from '@mediapipe/hands';
 import { useGraphStore } from '../../store/graphStore';
+
+/** Constructor registered by @mediapipe/hands IIFE (loaded via index.html, not bundled). */
+type MediapipeHandsInstance = {
+  setOptions: (opts: Record<string, unknown>) => void;
+  onResults: (cb: (results: unknown) => void) => void;
+  initialize: () => Promise<void>;
+  send: (data: { image: HTMLCanvasElement }) => Promise<void>;
+  close: () => Promise<void>;
+};
+
+type MediapipeHandsCtor = new (config: { locateFile?: (file: string) => string }) => MediapipeHandsInstance;
+
+function getMediapipeHandsConstructor(): MediapipeHandsCtor | null {
+  const H = (globalThis as unknown as { Hands?: MediapipeHandsCtor }).Hands;
+  return typeof H === 'function' ? H : null;
+}
 
 export function GraphCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -201,10 +216,27 @@ export function GraphCanvas() {
     animate();
 
     const videoEl = document.getElementById('webcam-bg') as HTMLVideoElement | null;
+    let hands: MediapipeHandsInstance | null = null;
     if (videoEl) {
       videoEl.classList.toggle('focus', focusBackground);
-      const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}` });
-      hands.setOptions({ selfieMode: false, maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.45, minTrackingConfidence: 0.45 });
+      const HandsCtor = getMediapipeHandsConstructor();
+      if (!HandsCtor) {
+        setHud((h) => ({ ...h, tracking: 'hands_lib_missing' }));
+      }
+      hands = HandsCtor
+        ? new HandsCtor({
+            locateFile: (file) =>
+              `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`,
+          })
+        : null;
+      if (hands) {
+        hands.setOptions({
+          selfieMode: false,
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.45,
+          minTrackingConfidence: 0.45,
+        });
 
       hands.onResults((results: any) => {
         if (trackingMode === 'off') return;
@@ -336,6 +368,7 @@ export function GraphCanvas() {
           }
         }
       });
+      }
 
       (async () => {
         try {
@@ -359,7 +392,7 @@ export function GraphCanvas() {
               procCtx.filter = 'brightness(1.25) contrast(1.2) saturate(1.15)';
               procCtx.drawImage(videoEl, 0, 0, w, h);
               procCtx.restore();
-              if (trackingMode !== 'off') await hands.send({ image: procCanvas });
+              if (trackingMode !== 'off' && hands) await hands.send({ image: procCanvas });
             }
             inferMsRef.current = performance.now() - t0;
             handRafRef.current = requestAnimationFrame(process);
@@ -380,6 +413,7 @@ export function GraphCanvas() {
       canvas.removeEventListener('click', onClick);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (handRafRef.current) cancelAnimationFrame(handRafRef.current);
+      void hands?.close?.();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (layoutWorkerRef.current) {
         layoutWorkerRef.current.terminate();

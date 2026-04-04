@@ -13,6 +13,11 @@
   </head>
   <body class="bg-[#050508] text-text font-mono">
     <div id="root"></div>
+    <!-- MediaPipe Hands is an IIFE that sets globalThis.Hands; bundling it breaks `new Hands()`. Load before the app. -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"
+      crossorigin="anonymous"
+    ></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
