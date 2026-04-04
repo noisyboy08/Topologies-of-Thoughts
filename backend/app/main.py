@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 from fastapi import FastAPI, Request
@@ -65,4 +66,14 @@ app.include_router(share.router)
 app.include_router(leads.router)
 app.include_router(graphs.router)
 app.include_router(jobs.router)
+
+# Vercel Services: requests arrive as routePrefix + path (e.g. /_/backend/health).
+# Mounting strips the prefix so existing routes stay at /health, /graphs, etc.
+if os.getenv("VERCEL"):
+    _prefix = os.getenv("TOT_BACKEND_ROUTE_PREFIX", "/_/backend").strip() or "/_/backend"
+    if not _prefix.startswith("/"):
+        _prefix = "/" + _prefix
+    _inner = app
+    app = FastAPI()
+    app.mount(_prefix, _inner)
 

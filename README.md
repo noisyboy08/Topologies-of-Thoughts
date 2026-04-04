@@ -157,11 +157,24 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 - Configure env vars listed above
 - Confirm health endpoint after deploy
 
-### Frontend (Vercel)
+### Frontend + API (Vercel Services, monorepo root)
+
+The repo includes a root [`vercel.json`](./vercel.json) with `experimentalServices`: Vite frontend at `/` and FastAPI at `/_/backend`.
+
+1. Import the **GitHub repo root** (not `frontend` only). In the Vercel project, set **Framework Preset** to **Services** (or let Vercel detect it).
+2. **Root Directory** stays `./` (repository root).
+3. Add the same env vars you use on the backend (see [Environment Variables](#environment-variables)), including Supabase and `ANTHROPIC_API_KEY`, plus CORS allowing your Vercel URL:
+   - `CORS_ORIGINS=["https://your-project.vercel.app"]` (and any preview URL patterns you use).
+4. If you change the backend `routePrefix` in `vercel.json`, set `TOT_BACKEND_ROUTE_PREFIX` on the deployment to the same value (used in `backend/app/main.py` when `VERCEL` is set).
+5. Frontend API calls: in production, if `VITE_API_URL` is unset, the app defaults to `https://<your-host>/_/backend`. Override with `VITE_API_URL` if the API is hosted elsewhere.
+
+**Note:** Vercel **Services** may require a plan or feature access. If you cannot enable it, deploy the frontend alone (**Root Directory** `frontend`) and host the API on Render/Railway as below.
+
+### Frontend only (Vercel, no Services)
 - Root directory: `frontend`
 - Build command: `npm run build`
 - Output directory: `dist`
-- Configure frontend backend URL env/config to point to deployed API
+- Set `VITE_API_URL` to your deployed API base URL (no trailing slash)
 
 ## Security Model
 

@@ -4,6 +4,12 @@ export function getApiBase(): string {
   if (typeof v === 'string' && v.trim().length > 0) {
     return v.replace(/\/$/, '');
   }
+  // Vercel Services: same-origin API under routePrefix (see repo vercel.json).
+  if (import.meta.env.PROD && typeof window !== 'undefined') {
+    const prefixRaw = (import.meta.env.VITE_VERCEL_API_PREFIX as string | undefined)?.trim() || '/_/backend';
+    const prefix = prefixRaw.startsWith('/') ? prefixRaw : `/${prefixRaw}`;
+    return `${window.location.origin}${prefix.replace(/\/$/, '')}`;
+  }
   return 'http://localhost:8000';
 }
 
